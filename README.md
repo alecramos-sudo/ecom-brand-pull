@@ -1,4 +1,46 @@
-# brandpull
+# Ecom Brand Pull
+
+A focused public fork of [suraj-xd/brandpull](https://github.com/suraj-xd/brandpull) for Shopify storefronts. Keeps Brandpull’s Chromium extraction, branding JSON, optional LLM pass, and local visual preview; adds a `shopify` field and Shopify preview sections. Original MIT license and attribution are retained.
+
+## Run this fork
+
+The fork is not published to npm. `npx brandpull` still runs upstream.
+
+```bash
+git clone https://github.com/alecramos-sudo/ecom-brand-pull.git
+cd ecom-brand-pull
+bun install
+bun run build
+node bin/brandpull https://angelacaglia.com --no-preview -o angela-branding.json
+node bin/brandpull https://gruns.co
+```
+
+Requires Node.js 20+, Bun for development/builds, and Chromium. Install Chromium with `npx playwright install chromium` if needed; installed Google Chrome is also supported as a fallback. After building, `npm link` exposes `ecom-brand-pull` and the legacy `brandpull` alias.
+
+## Shopify additions
+
+- **Detection and architecture:** evidence from Shopify’s runtime, section markup, CDN and Hydrogen. `headless` is `false` for a confirmed theme storefront, `true` for positive Hydrogen evidence, and `null` when unknown. CDN assets alone yield `possible`, not confirmed Shopify.
+- **Theme:** merchant name/ID/role and exposed schema name/version/theme-store ID. Missing metadata stays `null`; a renamed theme is not assumed to be Dawn or Horizon.
+- **Logo assets:** selected and header/footer logo candidates on Shopify’s CDN, observed URL, inferred original-size URL and 160–2560px width presets. Preserves the asset’s `v` parameter, removes resize/crop transforms, supports legacy filename sizes, and keeps SVGs as vectors. URLs are generated, not availability-verified; Shopify cannot upscale beyond the source and may re-encode images. Inline SVGs remain in the original `logo` output.
+- **Color schemes and palettes:** declared `:root`/`.color-*` rules, active scheme classes and their computed values, supporting Dawn-style `--color-*`, abbreviated `--c-*`, and Horizon palettes. Declared rules can include inactive media-query values; use rendered samples for the current viewport.
+- **Typography:** root font tokens and `@font-face` aliases, weights, styles and source URLs, including custom aliases such as `brandheading` and Horizon’s double-hyphen tokens.
+- **Ecommerce UI kit:** visible button, add-to-cart, input, product-card, price and badge samples with computed color, border, radius, typography, spacing and shadow. Samples come from the requested page; visit a product page to capture its controls.
+
+This is a public storefront scan, not an Admin API export. Unpublished settings, theme source and unused templates are unavailable. Cross-origin stylesheet restrictions are listed in `inaccessibleStylesheets`; partial Shopify failures are recorded without discarding base branding. Original branding heuristics are unchanged and can still rank app/footer styles highly.
+
+```bash
+bun run check
+bun test
+```
+
+[Exploration notes and live results](docs/exploration.md) · [Shopify image URL reference](https://shopify.dev/docs/api/liquid/filters/image_url) · [Horizon palette](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/color-palette.liquid) · [Horizon typography](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/theme-styles-variables.liquid)
+
+---
+
+## Upstream README
+
+The following instructions describe the original `brandpull` npm package. The fork keeps the same options; substitute `ecom-brand-pull` after linking locally.
+
 
 Brandpull extracts clean branding JSON: logos, favicons, OG images, colors, fonts, typography, spacing, and component styles.
 

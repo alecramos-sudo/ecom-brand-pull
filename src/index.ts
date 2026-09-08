@@ -18,12 +18,12 @@ interface Config {
 }
 
 const help = `
-  brandpull - Extract website branding JSON
+  ecom-brand-pull - Extract website branding JSON
 
   Usage:
-    brandpull <url> [options]               Extract branding, save JSON, open preview
-    brandpull branding <url> [options]      Extract branding JSON
-    brandpull preview <file.json> [options] Preview saved branding JSON
+    ecom-brand-pull <url> [options]               Extract branding, save JSON, open preview
+    ecom-brand-pull branding <url> [options]      Extract branding JSON
+    ecom-brand-pull preview <file.json> [options] Preview saved branding JSON
 
   Options:
     -o, --out <file>      Write JSON to file instead of stdout
@@ -148,7 +148,7 @@ const parseArgs = (args: string[]): Config => {
 
 const runPreview = async (config: Config) => {
 	const { serveBrandingPreview } = await import("./branding/preview")
-	process.stderr.write(`\n  \x1b[1mbrandpull preview\x1b[0m \x1b[90m- loading branding JSON...\x1b[0m\n`)
+	process.stderr.write(`\n  \x1b[1mecom-brand-pull preview\x1b[0m \x1b[90m- loading branding JSON...\x1b[0m\n`)
 	process.stderr.write(`  \x1b[90m${config.url}\x1b[0m\n\n`)
 
 	let profile: unknown
@@ -171,7 +171,7 @@ const runPreview = async (config: Config) => {
 const runBranding = async (config: Config) => {
 	const { extractBranding } = await import("./branding")
 	const target = config.out ? ` -> ${config.out}` : config.webPreview ? " -> preview" : " -> stdout"
-	process.stderr.write(`\n  \x1b[1mbrandpull\x1b[0m \x1b[90m- rendering page...\x1b[0m\n`)
+	process.stderr.write(`\n  \x1b[1mecom-brand-pull\x1b[0m \x1b[90m- rendering page...\x1b[0m\n`)
 	process.stderr.write(`  \x1b[90m${config.url}${target}\x1b[0m\n\n`)
 
 	const spinner = createSpinner("Rendering page with Chromium")

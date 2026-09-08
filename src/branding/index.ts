@@ -2,6 +2,8 @@ import { type Browser, chromium } from "playwright"
 import { enhanceWithLLM } from "./llm"
 import { extractBrandingFromPage } from "./page-script"
 import { processRawBranding } from "./processor"
+import { extractShopifyFromPage } from "./shopify"
+import { collectShopifyLogos } from "./shopify-assets"
 import type { BrandingExtractionOptions, BrandingProfile, RawBrandingData } from "./types"
 
 function normalizeUrl(input: string): string {
@@ -94,6 +96,19 @@ export async function extractBranding(
 			}
 		}
 
+		try {
+			const shopify = await page.evaluate(extractShopifyFromPage)
+			const logos = shopify.detected ? collectShopifyLogos(raw.logoCandidates, profile.logo, page.url()) : []
+			profile.shopify = { ...shopify, logos }
+		} catch (error) {
+			profile.diagnostics ??= {}
+			profile.diagnostics.errors ??= []
+			profile.diagnostics.errors.push({
+				context: "shopify",
+				message: error instanceof Error ? error.message : String(error),
+				timestamp: Date.now(),
+			})
+		}
 		if (!options.debug && !options.includeRaw) delete profile.debug
 		await context.close()
 		return profile

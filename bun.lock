@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "brandpull",
+      "name": "ecom-brand-pull",
       "dependencies": {
         "culori": "^4.0.2",
         "playwright": "^1.60.0",

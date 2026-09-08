@@ -17,7 +17,7 @@ function escapeHtml(value: string): string {
 }
 
 function html(profile: BrandingProfile): string {
-	const title = profile.brandName ? `${profile.brandName} Branding` : "Branding Preview"
+	const title = profile.brandName ? `${profile.brandName} — Ecom Brand Pull` : "Ecom Brand Pull"
 	return `<!doctype html>
 <html lang="en">
 <head>
@@ -151,7 +151,7 @@ function html(profile: BrandingProfile): string {
             <h2 class="label-mono text-xs font-semibold text-zinc-500">\${esc(title)}</h2>
             \${aside}
           </div>
-          <div>\${body}</div>
+          <div class="min-w-0">\${body}</div>
         </div>
       </section>
     \`;
@@ -210,6 +210,62 @@ function html(profile: BrandingProfile): string {
       \`;
     };
 
+
+    const sourceLink = (label, source) => {
+      try {
+        const url = new URL(source);
+        if (!['https:', 'http:'].includes(url.protocol)) return esc(label);
+        return \`<a class="break-all text-xs underline underline-offset-2" href="\${esc(url.href)}" target="_blank" rel="noreferrer">\${esc(label)}</a>\`;
+      } catch { return esc(label); }
+    };
+    const tokenSwatch = (name, value) => {
+      const raw = String(value);
+      const color = /^\\d+(?:\\.\\d+)?(?:\\s*,\\s*|\\s+)\\d+(?:\\.\\d+)?(?:\\s*,\\s*|\\s+)\\d+(?:\\.\\d+)?$/.test(raw.trim()) ? 'rgb(' + raw + ')' : raw;
+      return \`<div class="border-b border-zinc-100 py-2 last:border-b-0"><dt class="break-all font-mono text-xs text-zinc-500">\${esc(name)}</dt><dd class="mt-1 flex items-center gap-2 text-sm"><span class="h-5 w-5 shrink-0 rounded border border-zinc-200" style="background:\${esc(CSS.supports('color', color) ? color : 'transparent')}"></span><code class="break-all">\${esc(raw)}</code></dd></div>\`;
+    };
+    const tokenList = (tokens) => \`<dl>\${Object.entries(tokens || {}).map(([name, value]) => tokenSwatch(name, value)).join('')}</dl>\`;
+    const shopifyPanel = () => {
+      const shopify = state.data?.shopify;
+      if (!shopify) return '';
+      const theme = shopify.theme || {};
+      const metadata = {
+        Shopify: shopify.status,
+        Store: shopify.shop || 'Unknown',
+        Architecture: shopify.architecture,
+        Headless: shopify.headless === null ? 'Unknown' : shopify.headless ? 'Yes' : 'No',
+        Theme: theme.name || 'Not exposed',
+        'Schema name': theme.schemaName || 'Not exposed',
+        Version: theme.version || 'Not exposed',
+        'Theme ID': theme.id ?? 'Not exposed',
+        'Theme store ID': theme.themeStoreId ?? 'Not exposed',
+      };
+      const status = section('Shopify', \`<dl class="grid gap-4 sm:grid-cols-3">\${Object.entries(shopify.detected ? metadata : {Shopify: shopify.status}).map(([key, value]) => \`<div class="min-w-0"><dt class="text-xs text-zinc-500">\${esc(key)}</dt><dd class="mt-1 break-words text-sm">\${esc(value)}</dd></div>\`).join('')}</dl><p class="mt-4 text-xs text-zinc-500">\${esc((shopify.evidence || []).join(' · '))}</p>\`);
+      if (!shopify.detected) return status;
+      const schemes = (shopify.colorSchemes || []).map((scheme) => \`<details class="rounded-md border border-zinc-200 p-4"><summary class="cursor-pointer break-all font-mono text-sm">\${esc(scheme.selector)}</summary><div class="mt-3">\${tokenList(scheme.variables)}</div><p class="mt-3">\${sourceLink('Stylesheet: ' + scheme.source, scheme.source)}</p></details>\`).join('');
+      const rendered = (shopify.renderedSchemes || []).map((scheme) => \`<details class="rounded-md border border-zinc-200 p-4"><summary class="cursor-pointer font-mono text-sm">\${esc(scheme.className)}</summary>\${tokenList({background: scheme.background, text: scheme.color, ...scheme.variables})}</details>\`).join('');
+      const fonts = (shopify.fontFaces || []).map((font) => {
+        const urls = [...String(font.src).matchAll(/url\\(["']?([^"')]+)["']?\\)/g)].map((match) => match[1]);
+        return \`<div class="rounded-md border border-zinc-200 p-4"><h3 class="break-words text-sm font-medium">\${esc(font.family)}</h3><p class="mt-1 text-xs text-zinc-500">\${esc(font.weight || 'normal')} · \${esc(font.style || 'normal')}</p><div class="mt-2 flex flex-wrap gap-3">\${urls.map((url, i) => sourceLink('Font file ' + (i + 1), url)).join('')}</div></div>\`;
+      }).join('');
+      const aliases = Object.fromEntries(Object.entries(shopify.rootTokens || {}).filter(([name]) => /font|^--f-|^--h[1-6]-|^--body-|^--heading-/.test(name)));
+      const logos = (shopify.logos || []).map((logo) => {
+        const asset = logo.asset;
+        return \`<div class="rounded-md border border-zinc-200 p-4"><h3 class="text-sm font-medium">\${esc(logo.alt || 'Logo')} \${logo.selected ? '· selected' : ''}</h3><p class="mt-1 text-xs text-zinc-500">\${esc(logo.location)} · \${asset.vector ? 'SVG vector' : 'Raster image'}</p><div class="mt-3 flex flex-wrap gap-3">\${sourceLink('Observed source', asset.source)}\${sourceLink('Original candidate', asset.original)}\${(asset.presets || []).map((preset) => sourceLink(preset.width + 'px', preset.url)).join('')}</div><p class="mt-2 text-xs text-zinc-500">Original and preset URLs are generated and unverified. Raster dimensions depend on the uploaded asset.</p></div>\`;
+      }).join('');
+      const allowedStyles = ['background-color', 'color', 'border', 'border-radius', 'box-shadow', 'font-family', 'font-size', 'font-weight', 'line-height', 'letter-spacing', 'text-transform', 'padding', 'gap'];
+      const ui = (shopify.uiKit || []).map((item) => {
+        const style = Object.entries(item.styles || {}).filter(([key, value]) => allowedStyles.includes(key) && CSS.supports(key, value) && !/url\\s*\\(/i.test(value)).map(([key, value]) => key + ':' + value).join(';');
+        const sample = item.kind === 'input' ? \`<input aria-label="Extracted input sample" readonly placeholder="Email address" style="\${esc(style)}" class="max-w-full" />\` : \`<div class="inline-block max-w-full break-words" style="\${esc(style)}">\${esc(item.text || item.kind)}</div>\`;
+        return \`<div class="min-w-0 rounded-md border border-zinc-200 p-4"><h3 class="label-mono mb-4 text-xs text-zinc-500">\${esc(item.kind)}</h3><div class="overflow-auto py-2">\${sample}</div><details class="mt-3"><summary class="cursor-pointer text-xs text-zinc-500">Observed styles</summary><pre class="mt-2 overflow-auto text-xs">\${esc(JSON.stringify({tag: item.tag, classes: item.classes, styles: item.styles}, null, 2))}</pre></details></div>\`;
+      }).join('');
+      return status +
+        section('Shopify colors', \`<p class="mb-3 text-xs text-zinc-500">Declared schemes and root palettes; expand each selector to inspect its tokens.</p><div class="grid gap-3 sm:grid-cols-2">\${schemes || '<p class="text-sm text-zinc-500">No declared color rules exposed.</p>'}</div>\${rendered ? \`<details class="mt-4"><summary class="cursor-pointer text-sm">Rendered schemes on this page</summary><div class="mt-3 grid gap-3 sm:grid-cols-2">\${rendered}</div></details>\` : ''}\`) +
+        section('Shopify typography', \`<p class="mb-3 text-xs text-zinc-500">Declared font faces may include app and experimentation fonts.</p><details><summary class="cursor-pointer text-sm">Font files (\${(shopify.fontFaces || []).length})</summary><div class="mt-3 grid gap-3 sm:grid-cols-2">\${fonts || '<p class="text-sm text-zinc-500">No readable font-face rules.</p>'}</div></details><details class="mt-4"><summary class="cursor-pointer text-sm">Typography aliases and tokens</summary>\${tokenList(aliases)}</details>\`) +
+        section('Shopify logo assets', \`<div class="grid gap-3">\${logos || '<p class="text-sm text-zinc-500">No Shopify CDN logo candidates.</p>'}</div>\`) +
+        section('Ecommerce UI kit', \`<p class="mb-3 text-xs text-zinc-500">Style samples from visible elements on the scanned page. Font families use locally available fonts; download the font files above for exact reproduction.</p><div class="grid gap-3 sm:grid-cols-2">\${ui || '<p class="text-sm text-zinc-500">No ecommerce UI samples on this page.</p>'}</div>\`) +
+        section('Shopify source notes', \`<details><summary class="cursor-pointer text-sm">All root tokens (\${Object.keys(shopify.rootTokens || {}).length})</summary>\${tokenList(shopify.rootTokens)}</details><ul class="mt-4 space-y-2 text-xs text-zinc-500">\${(shopify.limitations || []).map((note) => \`<li>\${esc(note)}</li>\`).join('')}</ul>\`);
+    };
+
     const overview = () => {
       const data = state.data || {};
       const colors = data.colors || {};
@@ -227,6 +283,8 @@ function html(profile: BrandingProfile): string {
               \${errors.map((err) => \`<li><code>\${esc(err.context)}</code>: \${esc(err.message)}</li>\`).join("")}
             </ul>
           </div>\`) : ""}
+
+        \${shopifyPanel()}
 
         \${section("Images", \`
           <div class="grid gap-4 lg:grid-cols-3">
@@ -348,6 +406,7 @@ function html(profile: BrandingProfile): string {
           <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div class="min-w-0">
+                <p class="label-mono mb-2 text-xs text-zinc-500">Ecom Brand Pull</p>
                 <div class="flex flex-wrap items-center gap-2">
                   <h1 class="truncate text-2xl font-semibold text-zinc-950">\${esc(data.brandName || "Branding Preview")}</h1>
                   <span class="rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700">\${esc(data.colorScheme || "unknown")}</span>

@@ -1,3 +1,6 @@
+import type { extractShopifyFromPage } from "./shopify"
+import type { shopifyImageOptions } from "./shopify-assets"
+
 export type ColorScheme = "light" | "dark"
 
 export interface CSSData {
@@ -165,6 +168,14 @@ export interface InputSnapshot {
 }
 
 export interface BrandingProfile {
+	shopify?: ReturnType<typeof extractShopifyFromPage> & {
+		logos: Array<{
+			alt: string
+			location: string
+			selected: boolean
+			asset: NonNullable<ReturnType<typeof shopifyImageOptions>>
+		}>
+	}
 	url?: string
 	finalUrl?: string
 	brandName?: string

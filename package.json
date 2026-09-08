@@ -1,7 +1,7 @@
 {
-	"name": "brandpull",
+	"name": "ecom-brand-pull",
 	"version": "0.1.4",
-	"description": "Give agents instant branding visuals from websites",
+	"description": "Brandpull with Shopify theme, design token, logo asset and ecommerce UI extraction",
 	"module": "dist/index.js",
 	"type": "module",
 	"license": "MIT",
@@ -14,19 +14,21 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/suraj-xd/brandpull.git"
+		"url": "git+https://github.com/alecramos-sudo/ecom-brand-pull.git"
 	},
 	"bugs": {
-		"url": "https://github.com/suraj-xd/brandpull/issues"
+		"url": "https://github.com/alecramos-sudo/ecom-brand-pull/issues"
 	},
-	"homepage": "https://github.com/suraj-xd/brandpull#readme",
+	"homepage": "https://github.com/alecramos-sudo/ecom-brand-pull#readme",
 	"keywords": [
 		"branding",
 		"brand",
 		"design-tokens",
 		"scraper",
 		"playwright",
-		"cli"
+		"cli",
+		"shopify",
+		"ecommerce"
 	],
 	"files": [
 		"assets",
@@ -41,10 +43,12 @@
 		"check": "biome check . && tsc --noEmit && bun run build",
 		"format": "biome format --write .",
 		"prepack": "bun run build",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "bun test"
 	},
 	"bin": {
-		"brandpull": "bin/brandpull"
+		"brandpull": "bin/brandpull",
+		"ecom-brand-pull": "bin/brandpull"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.13",
