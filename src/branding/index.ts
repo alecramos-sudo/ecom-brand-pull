@@ -78,7 +78,7 @@ export async function extractBranding(
 		const page = await context.newPage()
 		page.setDefaultTimeout(options.timeoutMs ?? 30000)
 		await page.goto(url, { waitUntil: "domcontentloaded", timeout: options.timeoutMs ?? 30000 })
-		await page.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => undefined)
+		await page.waitForLoadState("networkidle", { timeout: 4000 }).catch(() => undefined)
 		await page.waitForTimeout(options.waitMs ?? 2000)
 
 		const raw = await page.evaluate(extractBrandingFromPage)

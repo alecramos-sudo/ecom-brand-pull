@@ -37,14 +37,17 @@ export function extractShopifyFromPage() {
 		/^--(?:color-|c-|gradient-|font-|f-|h[1-6]-|body-|heading-|button|btn-|input|i-|p-crd-|product-card|card-|style-|pills-|me-|border-|radius-|spacing-|page-width)/
 	const rootTokens = properties(getComputedStyle(document.documentElement), tokenPattern)
 	const colorSchemes: Array<{ selector: string; source: string; variables: Record<string, string> }> = []
+	const visibility = new WeakMap<Element, boolean>()
 	const visible = (el: Element) => {
+		if (visibility.has(el)) return visibility.get(el)!
 		const box = el.getBoundingClientRect()
-		return (
+		const result =
 			box.width > 1 &&
 			box.height > 1 &&
 			!el.closest(".visually-hidden,.sr-only") &&
 			el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
-		)
+		visibility.set(el, result)
+		return result
 	}
 	const visibleText = (el: Element) => {
 		const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)

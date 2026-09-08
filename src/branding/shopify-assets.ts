@@ -59,16 +59,23 @@ export function collectShopifyLogos(candidates: LogoCandidate[], selected: strin
 	const seen = new Set<string>()
 	const ordered = [...candidates].sort((a, b) => Number(b.src === selected) - Number(a.src === selected))
 	for (const candidate of ordered) {
+		const asset = shopifyImageOptions(candidate.src, pageUrl)
+		if (!asset || seen.has(asset.original)) continue
+		const label = candidate.alt.trim()
+		const descriptivePhoto = /\b(?:pouch|packaging|bottle|front view|showcasing|wearing|holding)\b/i.test(label)
+		const namedLogo = /(?:^|[\s_/-])(?:logo|wordmark|logotype)(?:[\s_.-]|$)/i.test(
+			new URL(candidate.src, pageUrl).pathname,
+		)
+		const conciseLogoLabel = label.length <= 80 && /\b(?:logo|wordmark|logotype)\b/i.test(label) && !descriptivePhoto
 		if (
 			candidate.src !== selected &&
 			!(
 				candidate.location !== "body" &&
-				(candidate.indicators.altMatch || candidate.indicators.srcMatch || candidate.indicators.classMatch)
+				!descriptivePhoto &&
+				(namedLogo || candidate.indicators.classMatch || (conciseLogoLabel && candidate.indicators.hrefMatch))
 			)
 		)
 			continue
-		const asset = shopifyImageOptions(candidate.src, pageUrl)
-		if (!asset || seen.has(asset.original)) continue
 		seen.add(asset.original)
 		logos.push({ alt: candidate.alt, location: candidate.location, selected: candidate.src === selected, asset })
 	}

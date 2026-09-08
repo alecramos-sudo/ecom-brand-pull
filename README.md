@@ -185,3 +185,11 @@ Bun is only used for local development and publishing builds.
 ## License
 
 MIT
+
+### Speed and model costs
+
+Normal scans and saved previews use Chromium/local code, with no LLM calls or AI tokens. `--llm` explicitly enables optional OpenAI enhancement. Diagnostics record whether it ran. Model usage in an assistant developing this tool is separate from scan costs.
+
+The network-idle wait is capped at four seconds, followed by the existing two-second settle window. Visibility results are cached within a single synchronous Shopify extraction. `--wait` can increase the settle wait for slow-loading pages. Reuse saved JSON when changing the preview; a live re-scan is unnecessary. Omit `--raw` for smaller exports (it is already off by default).
+
+Scheme cards show button/link color-token specimens only when the relevant tokens are exposed. These use neutral geometry; actual captured control shapes remain in the UI kit. Extra logo variants require logo-specific evidence; product alt text mentioning a logo is insufficient.

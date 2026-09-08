@@ -254,3 +254,25 @@ test("opaque colors ending in a zero blue channel remain filled and provide back
 	expect(result.uiKit.find((x) => x.kind === "button")?.treatment).toBe("filled")
 	expect(result.uiKit.find((x) => x.kind === "link")?.contextBackground).toBe("rgb(0, 0, 0)")
 })
+
+test("logo variants reject product and editorial alt text mentioning logos or branding", () => {
+	const candidate = (file: string, alt: string) => ({
+		src: `https://example.com/cdn/shop/files/${file}`,
+		alt,
+		isSvg: false,
+		isVisible: true,
+		location: "header" as const,
+		position: { top: 0, left: 0, width: 300, height: 300 },
+		indicators: { inHeader: true, altMatch: true, srcMatch: false, classMatch: false, hrefMatch: false },
+		source: "img",
+	})
+	const selected = candidate("wordmark.svg", "HiNote logo")
+	const photo = candidate("pdp.webp", "Pouch with HiNote logo and fruit")
+	const article = candidate("article.png", "Discover the branding behind HiNote")
+	const variant = candidate("logo-white.svg", "")
+	expect(
+		collectShopifyLogos([selected, photo, article, variant], selected.src, "https://example.com").map(
+			(l) => l.asset.original,
+		),
+	).toEqual([selected.src, variant.src])
+})

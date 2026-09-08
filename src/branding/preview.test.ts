@@ -36,7 +36,18 @@ test("rendered schemes stay separate and HTTP token copying yields complete CSS"
 				detected: true,
 				rootTokens: { "--c-background": "255,255,255" },
 				colorSchemes: [
-					{ selector: ".color-light", variables: { "--c-background": "255,255,255", "--c-foreground": "0,0,0" } },
+					{
+						selector: ".color-light",
+						variables: {
+							"--c-background": "255,255,255",
+							"--c-foreground": "0,0,0",
+							"--c-button": "0,0,0",
+							"--c-button-text": "255,255,255",
+							"--c-secondary-button": "220,220,220",
+							"--c-secondary-button-text": "0,0,0",
+							"--c-outline-button-text": "0,0,0",
+						},
+					},
 					{ selector: ".color-dark", variables: { "--c-background": "0,0,0", "--c-foreground": "255,255,255" } },
 				],
 				fontFaces: [],
@@ -56,6 +67,14 @@ test("rendered schemes stay separate and HTTP token copying yields complete CSS"
 				.locator(".scheme-sample")
 				.evaluateAll((elements) => elements.map((el) => getComputedStyle(el).backgroundColor)),
 		).toEqual(["rgb(255, 255, 255)", "rgb(0, 0, 0)"])
+		expect(
+			await page
+				.locator(".scheme-sample")
+				.first()
+				.locator("[data-scheme-variant]")
+				.evaluateAll((elements) => elements.map((el) => el.getAttribute("data-scheme-variant"))),
+		).toEqual(["Primary", "Secondary", "Outline"])
+		expect(await page.locator(".scheme-sample").nth(1).locator("[data-scheme-variant]").count()).toBe(0)
 		await page.evaluate(() => {
 			Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true })
 			document.execCommand = () => {

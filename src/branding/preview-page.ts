@@ -93,24 +93,58 @@ function previewApp() {
 	function schemeCard(name: string, vars: Record<string, string>, source: unknown, active: boolean) {
 		const bg = getColor(vars, ["--c-background", "--color-background", "--color-base", "--color-off-white"])
 		const fg = getColor(vars, ["--c-foreground", "--color-foreground", "--color-fg-primary", "--color-base-content"])
-		const button = getColor(vars, [
-			"--c-button",
-			"--color-button",
-			"--color-primary-button-background",
-			"--color-primary-base",
-			"--color-primary",
-		])
-		const buttonText = getColor(vars, [
-			"--c-button-text",
-			"--color-button-text",
-			"--color-primary-button-text",
-			"--color-primary-content",
-		])
+		const variants = [
+			{
+				label: "Primary",
+				backgrounds: [
+					"--c-button",
+					"--color-button",
+					"--color-primary-button-background",
+					"--color-primary-base",
+					"--color-primary",
+				],
+				texts: ["--c-button-text", "--color-button-text", "--color-primary-button-text", "--color-primary-content"],
+				borders: ["--color-primary-button-border"],
+			},
+			{
+				label: "Secondary",
+				backgrounds: ["--c-secondary-button", "--color-secondary-button", "--color-secondary-button-background"],
+				texts: ["--c-secondary-button-text", "--color-secondary-button-text"],
+				borders: ["--color-secondary-button-border"],
+			},
+			{
+				label: "Tertiary",
+				backgrounds: ["--c-tertiary-button", "--color-tertiary-button", "--color-tertiary-button-background"],
+				texts: ["--c-tertiary-button-text", "--color-tertiary-button-text"],
+				borders: ["--color-tertiary-button-border"],
+			},
+			{
+				label: "Outline",
+				backgrounds: [],
+				texts: ["--c-outline-button-text", "--color-outline-button-text"],
+				borders: ["--c-outline-button-text", "--color-outline-button-border"],
+			},
+		]
+		const buttons = variants
+			.map((variant) => {
+				const background = variant.label === "Outline" ? "transparent" : getColor(vars, variant.backgrounds)
+				const text = getColor(vars, variant.texts)
+				if (!background || !text) return ""
+				const border = getColor(vars, variant.borders)
+				return `<span class="scheme-control"><small>${variant.label}</small><span class="sample-button" data-scheme-variant="${variant.label}" style="${esc(css({ background, color: text, border: border ? `1px solid ${border}` : "1px solid transparent" }))}">Shop now</span></span>`
+			})
+			.join("")
+		const linkColor = getColor(vars, ["--c-link", "--color-link"])
+		const controls =
+			buttons +
+			(linkColor
+				? `<span data-scheme-variant="Link" style="${esc(css({ color: linkColor, "text-decoration": "underline" }))}">Link</span>`
+				: "")
 		const sample =
 			bg && fg
-				? `<div class="scheme-sample" style="${esc(css({ background: bg, color: fg }))}"><span class="eyebrow">${active ? "Used on this page" : "Declared scheme"}</span><div class="scheme-title">A closer look.</div><p>Background and foreground together.</p>${button && buttonText ? `<span class="sample-button" style="${esc(css({ background: button, color: buttonText }))}">Shop the collection</span>` : "<small>Button colors not exposed</small>"}</div>`
+				? `<div class="scheme-sample" style="${esc(css({ background: bg, color: fg }))}"><span class="eyebrow">${active ? "Used on this page" : "Declared scheme"}</span><div class="scheme-title">A closer look.</div><p>Background and foreground together.</p>${controls ? `<div class="scheme-controls">${controls}</div><small>Color-token specimens; control geometry is neutral.</small>` : "<small>Button colors not exposed</small>"}</div>`
 				: empty("Incomplete semantic colors; inspect the available tokens below.")
-		return `<article class="card"><div class="card-head"><h3>${esc(name)}</h3>${active ? '<span class="pill">In use</span>' : ""}</div>${sample}<div class="card-body">${swatches(Object.fromEntries(Object.entries(vars).filter(([k]) => /^(--c-|--color-)(background|foreground|button|button-text|primary-base|primary-content|base|base-content)$/.test(k))))}${inspect("CSS values & source", source)}</div></article>`
+		return `<article class="card"><div class="card-head"><h3>${esc(name)}</h3>${active ? '<span class="pill">In use</span>' : ""}</div>${sample}<div class="card-body">${swatches(Object.fromEntries(Object.entries(vars).filter(([k]) => /^(--c-|--color-)(background|foreground|(?:primary-|secondary-|tertiary-|outline-)?button(?:-background|-text|-border)?|link|primary-base|primary-content|base|base-content)$/.test(k))))}${inspect("CSS values & source", source)}</div></article>`
 	}
 	function colorsPanel() {
 		const s = state.data.shopify || {}
@@ -542,7 +576,7 @@ function previewApp() {
 export function previewHtml() {
 	return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ecom Brand Pull</title><style>
 @font-face{font-family:Geist;src:url(https://cdn.jsdelivr.net/npm/geist@1.7.0/dist/fonts/geist-sans/Geist-Variable.woff2);font-display:swap;font-weight:100 900}
-*{box-sizing:border-box}html{scroll-padding-top:80px}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Geist,system-ui,sans-serif}:root{--bg:#fafaf9;--surface:#fff;--text:#20201f;--muted:#6b6b65;--line:#deded8;--soft:#f2f2ee}.viewer-dark{--bg:#171716;--surface:#222220;--text:#f2f2ed;--muted:#b5b5ac;--line:#42423b;--soft:#2d2d28;color-scheme:dark}a{color:inherit;text-underline-offset:3px;overflow-wrap:anywhere}button,select,input{font:inherit}button,select,.actions a{min-height:40px}button,select{color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 12px;cursor:pointer}a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid currentColor;outline-offset:4px}button:hover,.actions a:hover{background:var(--soft)}h1,h2,h3,p{margin:0}h1{font-size:32px;letter-spacing:-1px;line-height:1.2}h2{font-size:23px;letter-spacing:-.5px}h3{font-size:15px;font-weight:600}.shell{max-width:1240px;margin:auto;padding:0 32px}header{background:var(--surface);border-bottom:1px solid var(--line);padding:28px 0}.topline,.title-row,.card-head{display:flex;justify-content:space-between;gap:20px}.topline{align-items:center;margin-bottom:24px}.title-row{align-items:flex-start}.title-row p{margin-top:8px}.eyebrow{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600}.muted,.section-head p{color:var(--muted)}.summary{font-size:12px}.switcher{display:flex;align-items:center;gap:10px;color:var(--muted)}select{max-width:260px}.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.actions a{display:inline-flex;align-items:center;border:1px solid var(--line);padding:8px 12px;border-radius:7px;text-decoration:none}.actions .primary{background:var(--text);color:var(--surface);border-color:var(--text)}nav{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}.nav-links{display:flex;gap:26px;overflow:auto;white-space:nowrap}.nav-links a{padding:17px 0;text-decoration:none;font-size:13px}.nav-links a:hover{text-decoration:underline}section{padding:40px 0;border-bottom:1px solid var(--line);scroll-margin-top:20px}.section-head{margin-bottom:22px}.section-head p{margin-top:5px;font-size:13px}.grid{display:grid;gap:18px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.card{min-width:0;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:10px}.card-head{padding:16px 20px;align-items:center}.card-body{padding:20px}.pill{font-size:10px;white-space:nowrap;border:1px solid var(--line);border-radius:20px;padding:3px 8px;color:var(--muted)}.logo-pair{display:grid;grid-template-columns:1fr 1fr}.logo-stage{position:relative;display:flex;align-items:center;justify-content:center;height:160px;padding:30px}.logo-stage.light{background:#f5f5f1;color:#444}.logo-stage.dark{background:#242421;color:#ddd}.logo-stage img{max-width:100%;max-height:90px;object-fit:contain}.logo-stage small{position:absolute;bottom:10px;left:16px;font-size:10px}.fine{color:var(--muted);font-size:11px;line-height:1.6;margin-top:10px}.inspect{margin-top:16px;font-size:12px}.inspect>summary{cursor:pointer;padding:8px 0;color:var(--muted);overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:480px;overflow:auto;background:var(--soft);padding:16px;border-radius:6px;font:11px/1.6 ui-monospace,monospace}code{font:10px/1.4 ui-monospace,monospace}.swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:12px}.swatch{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:10px;overflow-wrap:anywhere}.swatch i{display:block;height:34px;border:1px solid #8885;border-radius:5px}.swatch code{color:var(--muted)}.scheme-sample{padding:28px;min-height:220px}.scheme-title{font-size:30px;letter-spacing:-1px;font-weight:500;margin:15px 0 5px}.scheme-sample p{font-size:13px}.sample-button{display:inline-block;padding:11px 16px;border-radius:5px;margin-top:22px;font-size:12px}.subhead{margin:30px 0 10px}.type-list{margin-top:20px}.type-row{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;padding:24px 0;border-bottom:1px solid var(--line)}.type-row h3{margin-top:6px}.type-specimen{overflow-wrap:anywhere;max-height:280px;overflow:auto}.type-details{grid-column:2}.type-details .inspect{margin:0}.type-details pre{max-height:220px}.component-stage{padding:24px;overflow:auto;margin-top:16px;border-radius:6px;border:1px solid var(--line)}.sample-control{display:inline-block;max-width:100%;overflow-wrap:anywhere}.component-stage input{max-width:100%;min-height:44px}.empty{padding:20px;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:8px}.aux-image{display:block;max-width:100%;height:110px;object-fit:contain;margin-bottom:12px}.notice{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:12px 20px;border-radius:8px;z-index:10;max-width:90vw}
+*{box-sizing:border-box}html{scroll-padding-top:80px}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Geist,system-ui,sans-serif}:root{--bg:#fafaf9;--surface:#fff;--text:#20201f;--muted:#6b6b65;--line:#deded8;--soft:#f2f2ee}.viewer-dark{--bg:#171716;--surface:#222220;--text:#f2f2ed;--muted:#b5b5ac;--line:#42423b;--soft:#2d2d28;color-scheme:dark}a{color:inherit;text-underline-offset:3px;overflow-wrap:anywhere}button,select,input{font:inherit}button,select,.actions a{min-height:40px}button,select{color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 12px;cursor:pointer}a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid currentColor;outline-offset:4px}button:hover,.actions a:hover{background:var(--soft)}h1,h2,h3,p{margin:0}h1{font-size:32px;letter-spacing:-1px;line-height:1.2}h2{font-size:23px;letter-spacing:-.5px}h3{font-size:15px;font-weight:600}.shell{max-width:1240px;margin:auto;padding:0 32px}header{background:var(--surface);border-bottom:1px solid var(--line);padding:28px 0}.topline,.title-row,.card-head{display:flex;justify-content:space-between;gap:20px}.topline{align-items:center;margin-bottom:24px}.title-row{align-items:flex-start}.title-row p{margin-top:8px}.eyebrow{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600}.muted,.section-head p{color:var(--muted)}.summary{font-size:12px}.switcher{display:flex;align-items:center;gap:10px;color:var(--muted)}select{max-width:260px}.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.actions a{display:inline-flex;align-items:center;border:1px solid var(--line);padding:8px 12px;border-radius:7px;text-decoration:none}.actions .primary{background:var(--text);color:var(--surface);border-color:var(--text)}nav{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}.nav-links{display:flex;gap:26px;overflow:auto;white-space:nowrap}.nav-links a{padding:17px 0;text-decoration:none;font-size:13px}.nav-links a:hover{text-decoration:underline}section{padding:40px 0;border-bottom:1px solid var(--line);scroll-margin-top:20px}.section-head{margin-bottom:22px}.section-head p{margin-top:5px;font-size:13px}.grid{display:grid;gap:18px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.card{min-width:0;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:10px}.card-head{padding:16px 20px;align-items:center}.card-body{padding:20px}.pill{font-size:10px;white-space:nowrap;border:1px solid var(--line);border-radius:20px;padding:3px 8px;color:var(--muted)}.logo-pair{display:grid;grid-template-columns:1fr 1fr}.logo-stage{position:relative;display:flex;align-items:center;justify-content:center;height:160px;padding:30px}.logo-stage.light{background:#f5f5f1;color:#444}.logo-stage.dark{background:#242421;color:#ddd}.logo-stage img{max-width:100%;max-height:90px;object-fit:contain}.logo-stage small{position:absolute;bottom:10px;left:16px;font-size:10px}.fine{color:var(--muted);font-size:11px;line-height:1.6;margin-top:10px}.inspect{margin-top:16px;font-size:12px}.inspect>summary{cursor:pointer;padding:8px 0;color:var(--muted);overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:480px;overflow:auto;background:var(--soft);padding:16px;border-radius:6px;font:11px/1.6 ui-monospace,monospace}code{font:10px/1.4 ui-monospace,monospace}.swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:12px}.swatch{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:10px;overflow-wrap:anywhere}.swatch i{display:block;height:34px;border:1px solid #8885;border-radius:5px}.swatch code{color:var(--muted)}.scheme-sample{padding:28px;min-height:220px}.scheme-title{font-size:30px;letter-spacing:-1px;font-weight:500;margin:15px 0 5px}.scheme-sample p{font-size:13px}.scheme-control{display:inline-flex;flex-direction:column;gap:6px}.scheme-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:20px 0 12px}.scheme-controls .sample-button{margin-top:0}.sample-button{display:inline-block;padding:11px 16px;border-radius:5px;margin-top:22px;font-size:12px}.subhead{margin:30px 0 10px}.type-list{margin-top:20px}.type-row{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;padding:24px 0;border-bottom:1px solid var(--line)}.type-row h3{margin-top:6px}.type-specimen{overflow-wrap:anywhere;max-height:280px;overflow:auto}.type-details{grid-column:2}.type-details .inspect{margin:0}.type-details pre{max-height:220px}.component-stage{padding:24px;overflow:auto;margin-top:16px;border-radius:6px;border:1px solid var(--line)}.sample-control{display:inline-block;max-width:100%;overflow-wrap:anywhere}.component-stage input{max-width:100%;min-height:44px}.empty{padding:20px;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:8px}.aux-image{display:block;max-width:100%;height:110px;object-fit:contain;margin-bottom:12px}.notice{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:12px 20px;border-radius:8px;z-index:10;max-width:90vw}
 @media(max-width:700px){.shell{padding:0 18px}header{padding:20px 0}.title-row{flex-direction:column}.topline{align-items:flex-start}.switcher{flex-direction:column;align-items:flex-start;gap:3px;font-size:11px}select{max-width:185px;font-size:12px}h1{font-size:27px}.two{grid-template-columns:minmax(0,1fr)}.nav-links{gap:22px}.type-row{grid-template-columns:minmax(0,1fr);gap:12px}.type-details{grid-column:1}.type-specimen{max-height:240px}.logo-stage{height:140px;padding:20px}section{padding:30px 0}.actions{gap:6px}.actions a,button{font-size:12px}.scheme-sample{padding:24px}.card-body{padding:16px}}
 </style></head><body><div id="app"><main class="shell"><p>Loading brand kit…</p></main></div><script>(${previewApp.toString()})()</script></body></html>`
 }
