@@ -17,6 +17,16 @@ node bin/brandpull https://gruns.co
 
 Requires Node.js 20+, Bun for development/builds, and Chromium. Install Chromium with `npx playwright install chromium` if needed; installed Google Chrome is also supported as a fallback. After building, `npm link` exposes `ecom-brand-pull` and the legacy `brandpull` alias.
 
+## Compare results in one preview
+
+```bash
+node bin/brandpull preview angela-branding.json --compare gruns-branding.json --no-open
+```
+
+Repeat `--compare` to add more saved results. The store selector switches the kit, JSON and image downloads together. You can also use `--compare` with a new URL capture when opening its preview.
+
+The viewer leads with original logo variants, separate Shopify scheme cards and a root palette, font hierarchy specimens, and curated ecommerce controls. It loads available font files, keeps aliases and exact source styles in inspectors, and collapses other font declarations and diagnostics. Root tokens can be copied as CSS, including over HTTP remote previews. Older JSON remains viewable; re-scan to add hierarchy and background-context fields.
+
 ## Shopify additions
 
 - **Detection and architecture:** evidence from Shopify’s runtime, section markup, CDN and Hydrogen. `headless` is `false` for a confirmed theme storefront, `true` for positive Hydrogen evidence, and `null` when unknown. CDN assets alone yield `possible`, not confirmed Shopify.

@@ -15,6 +15,7 @@ interface Config {
 	webPreview: boolean
 	previewPort: number
 	openPreview: boolean
+	compare: string[]
 }
 
 const help = `
@@ -27,6 +28,7 @@ const help = `
 
   Options:
     -o, --out <file>      Write JSON to file instead of stdout
+    --compare <file>      Add a saved result to the preview store switcher
     --web-preview         Open a local browser preview for the branding JSON
     --no-preview          Save JSON without starting the local preview server
     --preview-port <n>    Preferred preview server port (default: 4177)
@@ -62,6 +64,7 @@ const parseArgs = (args: string[]): Config => {
 		process.exit(0)
 	}
 
+	const compare: string[] = []
 	const argv = [...args]
 	let mode: Config["mode"] = "branding"
 	let implicitBranding = true
@@ -104,6 +107,9 @@ const parseArgs = (args: string[]): Config => {
 		if (("-o" === arg || "--out" === arg) && next) {
 			out = next
 			i++
+		} else if ("--compare" === arg && next) {
+			compare.push(resolve(next))
+			i++
 		} else if ("--llm" === arg) {
 			llm = true
 		} else if ("--no-llm" === arg) {
@@ -143,7 +149,19 @@ const parseArgs = (args: string[]): Config => {
 		webPreview,
 		previewPort,
 		openPreview,
+		compare,
 	}
+}
+
+async function readComparisonProfiles(files: string[]): Promise<BrandingProfile[]> {
+	const compare: BrandingProfile[] = []
+	for (const file of files) {
+		const result = JSON.parse(await readFile(file, "utf8"))
+		if (!result || typeof result !== "object" || Array.isArray(result))
+			throw new Error(`Invalid branding JSON: ${file}`)
+		compare.push(result)
+	}
+	return compare
 }
 
 const runPreview = async (config: Config) => {
@@ -163,6 +181,7 @@ const runPreview = async (config: Config) => {
 	}
 
 	await serveBrandingPreview(profile as BrandingProfile, {
+		compare: await readComparisonProfiles(config.compare),
 		open: config.openPreview,
 		port: config.previewPort,
 	})
@@ -205,6 +224,7 @@ const runBranding = async (config: Config) => {
 		const { serveBrandingPreview } = await import("./branding/preview")
 		previewSpinner.stop()
 		await serveBrandingPreview(profile, {
+			compare: await readComparisonProfiles(config.compare),
 			open: config.openPreview,
 			port: config.previewPort,
 		})
