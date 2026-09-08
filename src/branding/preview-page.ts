@@ -49,9 +49,15 @@ function previewApp() {
 						"font-weight",
 						"line-height",
 						"letter-spacing",
+						"text-decoration",
+						"text-underline-offset",
 						"text-transform",
 						"padding",
 						"gap",
+						"inset",
+						"width",
+						"height",
+						"opacity",
 					].includes(k) &&
 					typeof v === "string" &&
 					!/[;{}]|url\s*\(/i.test(v) &&
@@ -232,12 +238,7 @@ function previewApp() {
 			})
 			.join("")
 		const fonts = s.fontFaces || []
-		const hierarchyFamilies = new Set<string>(
-			hierarchy.flatMap((t: any) => t.family.split(",").map((family: string) => cleanFamily(family).toLowerCase())),
-		)
-		const observed = fonts.filter(
-			(f: any) => f.usedOnPage && hierarchyFamilies.has(cleanFamily(f.family).toLowerCase()),
-		)
+		const observed = fonts.filter((f: any) => f.usedOnPage)
 		const other = fonts.filter((f: any) => !observed.includes(f))
 		const fontCards = (faces: any[]) => {
 			const groups = new Map<string, any[]>()
@@ -262,7 +263,18 @@ function previewApp() {
 			"type",
 			"Font hierarchy",
 			"Neutral specimens using observed sizes, weights and font families. Exact source text stays in the inspectors.",
-			`<p class="fine" role="status">${esc(state.fontStatus || "Loading observed font files…")} Alias display names use source filenames.</p><div class="type-list">${rows || empty("This saved result has no hierarchy capture. Re-scan the page to collect it.")}</div><h3 class="subhead">Fonts used by this hierarchy</h3>${fontCards(observed)}<details class="inspect"><summary>Other declared fonts (${other.length})</summary><p class="muted">May include apps, unused weights and experiments. A declaration alone does not establish use.</p>${fontCards(other)}</details>`,
+			`<p class="fine" role="status">${esc(state.fontStatus || "Loading observed font files…")} Alias display names use source filenames.</p><div class="type-list">${rows || empty("This saved result has no hierarchy capture. Re-scan the page to collect it.")}</div><h3 class="subhead">Fonts observed on the page</h3>${fontCards(observed)}${
+				(s.fontUsage || []).length
+					? `<h3 class="subhead">Font usage specimens</h3><div class="grid two">${[
+							...new Set<string>((s.fontUsage || []).map((u: any) => u.family)),
+						]
+							.map((family) => {
+								const uses = s.fontUsage.filter((u: any) => u.family === family)
+								return `<article class="card card-body"><h3>${esc(fontLabel(family.split(",")[0] || family))}</h3><p style="${esc(css({ "font-family": specimenFamily(family), "font-size": "20px" }))}">Aa Bb 0123456789 — Details matter.</p><p class="fine">Observed on: ${esc([...new Set(uses.map((u: any) => u.tag))].join(", "))}</p>${inspect("Usage samples", uses)}</article>`
+							})
+							.join("")}</div>`
+					: ""
+			}<details class="inspect"><summary>Other declared fonts (${other.length})</summary><p class="muted">May include apps, unused weights and experiments. A declaration alone does not establish use.</p>${fontCards(other)}</details>`,
 		)
 	}
 	function kitPanel() {
@@ -289,7 +301,9 @@ function previewApp() {
 		const selected: any[] = []
 		const used = new Set<any>()
 		const take = (label: string, kind: string, rank?: (item: any) => number) => {
-			const candidates = items.filter((x: any) => x.kind === kind && !used.has(x))
+			const candidates = items
+				.filter((x: any) => x.kind === kind && !used.has(x))
+				.sort((a: any, b: any) => Number(!!b.text) - Number(!!a.text))
 			if (rank) candidates.sort((a: any, b: any) => rank(b) - rank(a))
 			const item = candidates[0]
 			if (item) {
@@ -297,29 +311,73 @@ function previewApp() {
 				used.add(item)
 			}
 		}
-		const rank = (x: any) =>
-			(/shop|discover|explore|buy|start|add to/i.test(x.text) ? 5 : 0) -
-			(/play|skip|close|next|previous/i.test(x.text) ? 5 : 0) +
-			(x.text ? 1 : 0)
-		take("Primary CTA", "button", rank)
-		take("Secondary CTA", "button", rank)
+		for (const variant of ["primary", "secondary", "tertiary", "outline", "text"]) {
+			const item = items.find((x: any) => x.kind === "button" && x.variant === variant)
+			if (item) {
+				selected.push({ label: `${variant.charAt(0).toUpperCase()}${variant.slice(1)} button`, item })
+				used.add(item)
+			}
+		}
+		for (const treatment of ["filled", "outline", "decorated", "text", "underlined"]) {
+			const item = items.find((x: any) => x.kind === "button" && x.text && x.treatment === treatment && !used.has(x))
+			if (item) {
+				selected.push({ label: `${treatment.charAt(0).toUpperCase()}${treatment.slice(1)} treatment`, item })
+				used.add(item)
+			}
+		}
+		if (!selected.length) take("Button", "button")
+		take("Link", "link")
 		take("Add to cart", "addToCart")
 		take("Input", "input")
 		take("Product card", "productCard")
 		const sample = (label: string, item: any) => {
 			const styles = { ...item.styles, "font-family": specimenFamily(item.styles["font-family"] || "sans-serif") }
+			const textStyles = {
+				...(item.textStyles || {}),
+				"font-family": specimenFamily(item.textStyles?.["font-family"] || item.styles["font-family"] || "sans-serif"),
+			}
+			let backdrop = item.contextBackground || ""
+			const foreground = (item.textStyles || item.styles).color || ""
+			const rgb = (value: string) =>
+				value
+					.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)
+					?.slice(1)
+					.map(Number)
+			const fg = rgb(foreground),
+				bg = rgb(backdrop || "rgb(255, 255, 255)")
+			const adjusted =
+				item.treatment !== "filled" &&
+				fg &&
+				bg &&
+				Math.abs(fg.reduce((a, b) => a + b, 0) - bg.reduce((a, b) => a + b, 0)) < 60
+			if (adjusted) backdrop = fg.reduce((a, b) => a + b, 0) > 380 ? "#242421" : "#f5f5f1"
+			const decorations = Object.values(item.pseudoElements || {})
+				.filter((p: any) => p.content === '""' && p.position === "absolute")
+				.map(
+					(p: any) =>
+						`<span aria-hidden="true" style="position:absolute;pointer-events:none;max-width:100%;z-index:0;${esc(css({ border: p.border, "border-radius": p["border-radius"], "box-shadow": p["box-shadow"], inset: p.inset, opacity: p.opacity, width: p.inset?.includes("auto") ? p.width : "auto", height: p.inset?.includes("auto") ? p.height : "auto", "background-color": p["background-color"] }))}"></span>`,
+				)
+				.join("")
 			const content =
 				item.kind === "input"
 					? `<input readonly aria-label="Input style sample" placeholder="Your email" style="${esc(css(styles))}">`
-					: `<div class="sample-control" style="${esc(css(styles))}">${esc(item.text || label)}</div>`
-			return `<article class="card card-body"><h3>${esc(label)}</h3><div class="component-stage" style="${esc(css({ background: item.contextBackground || "" }))}">${content}</div><p class="fine">Source: ${esc(item.tag)} · ${esc(item.kind)}</p>${inspect("Source element & styles", item)}</article>`
+					: `<div class="sample-control" style="position:relative;${esc(css(styles))}">${decorations}<span style="position:relative;z-index:1;${esc(css(textStyles))}">${esc(item.text || label)}</span></div>`
+			return `<article class="card card-body"><h3>${esc(label)}</h3><div class="component-stage" style="${esc(css({ background: backdrop }))}">${content}</div><p class="fine">${adjusted ? "Preview backdrop adjusted for visibility. " : ""}Source: ${esc(item.tag)} · ${esc(item.variantEvidence || "No explicit variant")} · ${esc(item.treatment || item.kind)}</p>${inspect("Source element & styles", item)}</article>`
 		}
 		const remaining = items.filter((x: any) => !used.has(x))
+		const variantSummary = ["primary", "secondary", "tertiary", "outline"]
+			.map((variant) => {
+				const observed = items.some((x: any) => x.variant === variant)
+				const pattern = new RegExp(`\\.(?:button|btn|link)(?:--|-)${variant}(?:[^a-z]|$)`, "i")
+				const declared = (state.data.shopify?.controlRules || []).some((r: any) => pattern.test(r.selector))
+				return `<span class="fine">${esc(variant)}: ${observed ? "observed" : declared ? "declared only" : "not found"}</span>`
+			})
+			.join(" · ")
 		return section(
 			"ui-kit",
 			"UI kit",
-			"Representative storefront styles. CTA labels are preview roles; inspect the source to confirm context.",
-			`<div class="grid two">${selected.map((x) => sample(x.label, x.item)).join("") || empty("No ecommerce components captured.")}</div><details class="inspect"><summary>More samples (${remaining.length})</summary><div class="grid two">${remaining.map((item: any) => sample(item.kind, item)).join("")}</div></details>`,
+			"Theme variants use explicit class names. Filled, outline and text describe observed appearance. Missing variants are not invented; pseudo-element decorations are available in the inspector.",
+			`<p>${variantSummary}</p><div class="grid two">${selected.map((x) => sample(x.label, x.item)).join("") || empty("No ecommerce components captured.")}</div><details class="inspect"><summary>More samples (${remaining.length})</summary><div class="grid two">${remaining.map((item: any) => sample(item.kind, item)).join("")}</div></details>${inspect("Declared button & link rules (including states and unused variants)", state.data.shopify?.controlRules || [])}`,
 		)
 	}
 	function detailsPanel() {

@@ -43,7 +43,7 @@ bun run check
 bun test
 ```
 
-[Exploration notes and live results](docs/exploration.md) · [Shopify image URL reference](https://shopify.dev/docs/api/liquid/filters/image_url) · [Horizon palette](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/color-palette.liquid) · [Horizon typography](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/theme-styles-variables.liquid)
+[Font and control-style research](docs/control-styles.md) · [Exploration notes and live results](docs/exploration.md) · [Shopify image URL reference](https://shopify.dev/docs/api/liquid/filters/image_url) · [Horizon palette](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/color-palette.liquid) · [Horizon typography](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/theme-styles-variables.liquid)
 
 ---
 

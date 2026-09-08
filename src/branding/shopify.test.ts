@@ -222,3 +222,35 @@ test("deduplicated image variants preserve the selected candidate and its metada
 	expect(logos).toHaveLength(1)
 	expect(logos[0]).toMatchObject({ selected: true, alt: "Selected desktop logo", asset: { source: desktop.src } })
 })
+
+test("accent descendants, explicit variants, pseudo outlines and declared states survive extraction", async () => {
+	const result = await scan(`<script>window.Shopify={shop:'example.myshopify.com'}</script><style>
+ .button {background:transparent;border:0;font-family:Arial}
+ .button span,.accent {font-family:brandaccent;font-size:13px}
+ .button::after {content:"";position:absolute;inset:1px;box-shadow:0 0 0 1px red}
+ .button--secondary:hover {color:blue}
+ @media(min-width:900px){.button--tertiary {color:green}}
+ </style><main><button class="button button--outline"><span>Shop now</span><span class="visually-hidden">opens in a new tab</span></button><a class="button-secondary" href="/shop">Learn more</a><a href="/about">About us</a><p class="accent">Small details</p></main>`)
+	const button = result.uiKit.find((x) => x.kind === "button")!
+	expect(button.variant).toBe("outline")
+	expect(button.text).toBe("Shop now")
+	expect(result.uiKit.some((x) => x.kind === "button" && x.variant === "secondary")).toBe(true)
+	expect(button.treatment).toBe("decorated")
+	expect(button.textStyles["font-family"]).toBe("brandaccent")
+	expect(button.pseudoElements["::after"]?.["box-shadow"]).toContain("1px")
+	expect(result.uiKit.filter((x) => x.kind === "link")).toHaveLength(1)
+	expect(result.fontUsage.some((x) => x.family === "brandaccent" && x.tag === "span")).toBe(true)
+	expect(result.controlRules.find((x) => x.selector === ".button--tertiary")?.conditions).toEqual([
+		"(min-width: 900px)",
+	])
+	expect(result.controlRules.some((x) => x.selector.includes(":hover"))).toBe(true)
+	expect(result.uiKit.some((x) => x.variant === "tertiary")).toBe(false)
+})
+
+test("opaque colors ending in a zero blue channel remain filled and provide background context", async () => {
+	const result = await scan(
+		`<script>window.Shopify={shop:'example.myshopify.com'}</script><style>main{background:rgb(0,0,0)}button{background:rgb(255,0,0);border:0}a{color:white}</style><main><button>Buy</button><a href="/help">Help</a></main>`,
+	)
+	expect(result.uiKit.find((x) => x.kind === "button")?.treatment).toBe("filled")
+	expect(result.uiKit.find((x) => x.kind === "link")?.contextBackground).toBe("rgb(0, 0, 0)")
+})

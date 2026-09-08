@@ -39,7 +39,21 @@ export function extractShopifyFromPage() {
 	const colorSchemes: Array<{ selector: string; source: string; variables: Record<string, string> }> = []
 	const visible = (el: Element) => {
 		const box = el.getBoundingClientRect()
-		return !!box.width && !!box.height && el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+		return (
+			box.width > 1 &&
+			box.height > 1 &&
+			!el.closest(".visually-hidden,.sr-only") &&
+			el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+		)
+	}
+	const visibleText = (el: Element) => {
+		const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+		const parts: string[] = []
+		for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+			const parent = node.parentElement
+			if (parent && !parent.closest("svg,script,style") && visible(parent)) parts.push(node.textContent || "")
+		}
+		return parts.join(" ").trim().replace(/\s+/g, " ").slice(0, 100)
 	}
 	const normalizeFamily = (family: string) =>
 		family
@@ -99,6 +113,39 @@ export function extractShopifyFromPage() {
 				text: text.trim().replace(/\s+/g, " ").slice(0, 100),
 			})
 		}
+	const fontUsage: Array<{
+		family: string
+		tag: string
+		classes: string
+		text: string
+		size: string
+		weight: string
+		letterSpacing: string
+		textTransform: string
+	}> = []
+	const seenUsage = new Set<string>()
+	if (detected)
+		for (const el of document.querySelectorAll("body *")) {
+			if (
+				!visible(el) ||
+				!Array.from(el.childNodes).some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim())
+			)
+				continue
+			const style = getComputedStyle(el)
+			const key = JSON.stringify([style.fontFamily, el.tagName, style.fontSize, style.fontWeight])
+			if (seenUsage.has(key) || fontUsage.length >= 120) continue
+			seenUsage.add(key)
+			fontUsage.push({
+				family: style.fontFamily,
+				tag: el.tagName.toLowerCase(),
+				classes: el.getAttribute("class") || "",
+				text: (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 100),
+				size: style.fontSize,
+				weight: style.fontWeight,
+				letterSpacing: style.letterSpacing,
+				textTransform: style.textTransform,
+			})
+		}
 	const fontFaces: Array<{
 		family: string
 		weight: string
@@ -108,6 +155,12 @@ export function extractShopifyFromPage() {
 		usedOnPage: boolean
 	}> = []
 	const seenFontFaces = new Set<string>()
+	const controlRules: Array<{
+		selector: string
+		source: string
+		conditions: string[]
+		declarations: Record<string, string>
+	}> = []
 	const inaccessibleStylesheets: string[] = []
 	const seenSheets = new Set<CSSStyleSheet>()
 	const walkSheet = (sheet: CSSStyleSheet) => {
@@ -146,6 +199,28 @@ export function extractShopifyFromPage() {
 				}
 			}
 			if (rule instanceof CSSStyleRule) {
+				if (
+					controlRules.length < 400 &&
+					/(?:\.(?:button|btn|link)(?:[\s.:#,[>-]|$)|\.(?:button|btn|link)[-_]|\ba:(?:hover|focus|active)|underline-on-hover)/i.test(
+						rule.selectorText,
+					)
+				) {
+					const conditions: string[] = []
+					for (let parent = rule.parentRule; parent; parent = parent.parentRule) {
+						if ("conditionText" in parent) conditions.push(String(parent.conditionText))
+					}
+					controlRules.push({
+						selector: rule.selectorText,
+						source,
+						conditions,
+						declarations: Object.fromEntries(
+							Array.from(rule.style).map((key) => [
+								key,
+								rule.style.getPropertyValue(key).trim() + (rule.style.getPropertyPriority(key) ? " !important" : ""),
+							]),
+						),
+					})
+				}
 				const variables = properties(rule.style, /^--(?:color-|c-|gradient-)/)
 				if (Object.keys(variables).length && /:root|\.color-[\w-]+/.test(rule.selectorText)) {
 					colorSchemes.push({ selector: rule.selectorText, source, variables })
@@ -174,7 +249,9 @@ export function extractShopifyFromPage() {
 		}
 	})
 	const componentSelectors: Record<string, string> = {
-		button: 'main button,main a.button,main a.btn,main a[class*="button--"],main a[href*="/collections/"]',
+		button:
+			'button,a.button,a.btn,a[class*="button--"],a.button-primary,a.button-secondary,a.button-tertiary,a.button-outline,a[class*="btn-"],[role="button"]',
+		link: "main a[href],header a[href],footer a[href]",
 		addToCart:
 			'button[name="add"],button[type="submit"][form*="product"],.product-form__submit,.add-to-cart-btn,add-to-cart-component button',
 		input:
@@ -191,14 +268,22 @@ export function extractShopifyFromPage() {
 		text: string
 		styles: Record<string, string>
 		contextBackground: string | null
+		variant: string | null
+		variantEvidence: string | null
+		treatment: string
+		pseudoElements: Record<string, Record<string, string>>
+		textStyles: Record<string, string>
 	}> = []
 	if (detected)
 		for (const [kind, selector] of Object.entries(componentSelectors)) {
 			const seen = new Set<string>()
-			for (const el of Array.from(document.querySelectorAll(selector))) {
-				const box = el.getBoundingClientRect()
+			for (const el of Array.from(document.querySelectorAll(selector)).sort(
+				(a, b) => Number(!!b.closest("main")) - Number(!!a.closest("main")),
+			)) {
+				if (!visible(el)) continue
+				if (kind === "link" && el.matches(componentSelectors.button!)) continue
+				if (kind === "link" && !(el.textContent || "").trim()) continue
 				const computed = getComputedStyle(el)
-				if (!box.width || !box.height || computed.visibility === "hidden" || computed.opacity === "0") continue
 				const styles: Record<string, string> = {}
 				for (const key of [
 					"background-color",
@@ -214,17 +299,85 @@ export function extractShopifyFromPage() {
 					"text-transform",
 					"padding",
 					"gap",
+					"text-decoration",
+					"text-underline-offset",
 				])
 					styles[key] = computed.getPropertyValue(key)
 				let contextBackground: string | null = null
 				for (let ancestor = el.parentElement; ancestor; ancestor = ancestor.parentElement) {
 					const background = getComputedStyle(ancestor).backgroundColor
-					if (background && background !== "transparent" && !/(?:,\s*|\/\s*)0(?:\.0+)?\s*\)$/.test(background)) {
+					if (
+						background &&
+						background !== "transparent" &&
+						!/^(?:rgba\([^)]*,\s*0(?:\.0+)?\s*\)|[a-z]+\([^)]*\/\s*0(?:\.0+)?\s*\))$/.test(background)
+					) {
 						contextBackground = background
 						break
 					}
 				}
-				const fingerprint = JSON.stringify([styles, contextBackground])
+				const textElement =
+					[el, ...el.querySelectorAll("span,strong,em")].find(
+						(candidate) =>
+							visible(candidate) &&
+							Array.from(candidate.childNodes).some(
+								(node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+							),
+					) || el
+				const textComputed = getComputedStyle(textElement)
+				const textStyles = Object.fromEntries(
+					["font-family", "font-size", "font-weight", "line-height", "letter-spacing", "text-transform", "color"].map(
+						(key) => [key, textComputed.getPropertyValue(key)],
+					),
+				)
+				const variantClass = [...el.classList].find((name) =>
+					/^(?:button|btn|link)(?:--|-)(?:primary|secondary|tertiary|outline|text)(?:-|$)/i.test(name),
+				)
+				const variant =
+					variantClass?.match(/(?:--|-)(primary|secondary|tertiary|outline|text)(?:-|$)/i)?.[1]?.toLowerCase() || null
+				const pseudoElements: Record<string, Record<string, string>> = {}
+				for (const pseudo of ["::before", "::after"]) {
+					const ps = getComputedStyle(el, pseudo)
+					if (ps.content === "none" || ps.content === "normal" || ps.display === "none") continue
+					pseudoElements[pseudo] = Object.fromEntries(
+						[
+							"content",
+							"width",
+							"height",
+							"border",
+							"border-radius",
+							"box-shadow",
+							"background-color",
+							"color",
+							"position",
+							"inset",
+							"opacity",
+							"transform",
+						].map((key) => [key, ps.getPropertyValue(key)]),
+					)
+				}
+				const transparent = (value: string) =>
+					!value ||
+					value === "transparent" ||
+					/^(?:rgba\([^)]*,\s*0(?:\.0+)?\s*\)|[a-z]+\([^)]*\/\s*0(?:\.0+)?\s*\))$/.test(value)
+				const border = (style: CSSStyleDeclaration) =>
+					["Top", "Right", "Bottom", "Left"].some(
+						(side) =>
+							Number.parseFloat(style.getPropertyValue(`border-${side.toLowerCase()}-width`)) > 0 &&
+							!["none", "hidden"].includes(style.getPropertyValue(`border-${side.toLowerCase()}-style`)),
+					)
+				const treatment = !transparent(computed.backgroundColor)
+					? "filled"
+					: border(computed)
+						? "outline"
+						: computed.boxShadow !== "none" ||
+								Object.values(pseudoElements).some(
+									(ps) => ps["box-shadow"] !== "none" || /[1-9][\d.]*px (?:solid|dashed|dotted)/.test(ps.border || ""),
+								)
+							? "decorated"
+							: computed.textDecorationLine.includes("underline")
+								? "underlined"
+								: "text"
+				const fingerprint = JSON.stringify([variant, styles, textStyles, contextBackground, pseudoElements])
 				if (seen.has(fingerprint)) continue
 				seen.add(fingerprint)
 				uiKit.push({
@@ -232,11 +385,16 @@ export function extractShopifyFromPage() {
 					selector,
 					tag: el.tagName.toLowerCase(),
 					classes: el.getAttribute("class") || "",
-					text: (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 100),
+					text: visibleText(el),
 					styles,
 					contextBackground,
+					variant,
+					variantEvidence: variantClass || null,
+					treatment,
+					pseudoElements,
+					textStyles,
 				})
-				if (seen.size >= 6) break
+				if (seen.size >= (kind === "button" ? 36 : kind === "link" ? 18 : 6)) break
 			}
 		}
 	return {
@@ -260,12 +418,15 @@ export function extractShopifyFromPage() {
 		colorSchemes,
 		renderedSchemes: detected ? renderedSchemes : [],
 		fontFaces,
+		fontUsage,
+		controlRules,
 		typographyHierarchy,
 		uiKit,
 		limitations: [
 			"Public storefront evidence only; unpublished theme settings and unused templates are unavailable.",
 			"Missing theme metadata does not prove a headless storefront. Version is reported only when exposed.",
 			"CSS rules are declared values; rendered schemes and UI samples reflect the current page and viewport.",
+			"UI variants come from explicit class names; treatments describe default computed styles. Hover, focus and disabled states are not sampled.",
 			"Font usage means the family appears in a visible element's computed font stack, not proof the font file rendered.",
 			...(inaccessibleStylesheets.length ? ["Some stylesheets could not be read through the browser CSSOM."] : []),
 		],
