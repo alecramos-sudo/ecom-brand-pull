@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "bun:test"
 import { type Browser, chromium } from "playwright"
+import { captureHoverStates } from "./hover"
 import { extractShopifyFromPage } from "./shopify"
 import { collectShopifyLogos, shopifyImageOptions } from "./shopify-assets"
 
@@ -275,4 +276,22 @@ test("logo variants reject product and editorial alt text mentioning logos or br
 			(l) => l.asset.original,
 		),
 	).toEqual([selected.src, variant.src])
+})
+
+test("CSS hover capture includes descendant text, pseudo borders and restores the source", async () => {
+	const page = await browser.newPage()
+	try {
+		await page.setContent(
+			`<script>window.Shopify={shop:'test.myshopify.com'}</script><style>button{background:white;transition:background-color .2s}.group:hover button{background:red}button:hover span{color:blue}button::after{content:"";box-shadow:0 0 0 1px black}button:hover::after{box-shadow:0 0 0 3px blue}</style><main class="group"><button><span>Shop now</span></button></main>`,
+		)
+		const base = await page.evaluate(extractShopifyFromPage)
+		const captured = await captureHoverStates(page, base.uiKit)
+		const item = captured.find((x) => x.kind === "button")!
+		expect("hover" in item && item.hover?.styles["background-color"]).toBe("rgb(255, 0, 0)")
+		expect("hover" in item && item.hover?.textStyles.color).toBe("rgb(0, 0, 255)")
+		expect("hover" in item && item.hover?.pseudoElements["::after"]?.["box-shadow"]).toContain("3px")
+		expect(await page.locator("button").evaluate((el) => el.matches(":hover"))).toBe(false)
+	} finally {
+		await page.close()
+	}
 })

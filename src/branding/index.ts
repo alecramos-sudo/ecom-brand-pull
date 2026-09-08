@@ -1,4 +1,5 @@
 import { type Browser, chromium } from "playwright"
+import { captureHoverStates } from "./hover"
 import { enhanceWithLLM } from "./llm"
 import { extractBrandingFromPage } from "./page-script"
 import { processRawBranding } from "./processor"
@@ -100,6 +101,7 @@ export async function extractBranding(
 			const shopify = await page.evaluate(extractShopifyFromPage)
 			const logos = shopify.detected ? collectShopifyLogos(raw.logoCandidates, profile.logo, page.url()) : []
 			profile.shopify = { ...shopify, logos }
+			profile.shopify.uiKit = await captureHoverStates(page, shopify.uiKit)
 		} catch (error) {
 			profile.diagnostics ??= {}
 			profile.diagnostics.errors ??= []

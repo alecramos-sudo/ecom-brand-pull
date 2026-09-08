@@ -264,6 +264,7 @@ export function extractShopifyFromPage() {
 		badge: ".badge,.product-badge,.card__badge",
 	}
 	const uiKit: Array<{
+		domPath: string
 		kind: string
 		selector: string
 		tag: string
@@ -304,6 +305,7 @@ export function extractShopifyFromPage() {
 					"gap",
 					"text-decoration",
 					"text-underline-offset",
+					"transform",
 				])
 					styles[key] = computed.getPropertyValue(key)
 				let contextBackground: string | null = null
@@ -344,6 +346,7 @@ export function extractShopifyFromPage() {
 					pseudoElements[pseudo] = Object.fromEntries(
 						[
 							"content",
+							"display",
 							"width",
 							"height",
 							"border",
@@ -383,7 +386,14 @@ export function extractShopifyFromPage() {
 				const fingerprint = JSON.stringify([variant, styles, textStyles, contextBackground, pseudoElements])
 				if (seen.has(fingerprint)) continue
 				seen.add(fingerprint)
+				const path: string[] = []
+				for (let node: Element | null = el; node; node = node.parentElement) {
+					path.unshift(
+						`${node.tagName.toLowerCase()}:nth-child(${node.parentElement ? [...node.parentElement.children].indexOf(node) + 1 : 1})`,
+					)
+				}
 				uiKit.push({
+					domPath: path.join(" > "),
 					kind,
 					selector,
 					tag: el.tagName.toLowerCase(),
@@ -429,7 +439,7 @@ export function extractShopifyFromPage() {
 			"Public storefront evidence only; unpublished theme settings and unused templates are unavailable.",
 			"Missing theme metadata does not prove a headless storefront. Version is reported only when exposed.",
 			"CSS rules are declared values; rendered schemes and UI samples reflect the current page and viewport.",
-			"UI variants come from explicit class names; treatments describe default computed styles. Hover, focus and disabled states are not sampled.",
+			"UI variants come from explicit class names; treatments describe default computed styles. CSS hover states are sampled separately when available; focus and disabled states are not sampled.",
 			"Font usage means the family appears in a visible element's computed font stack, not proof the font file rendered.",
 			...(inaccessibleStylesheets.length ? ["Some stylesheets could not be read through the browser CSSOM."] : []),
 		],

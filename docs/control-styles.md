@@ -10,7 +10,7 @@ Observed uses include navigation labels, product badges, before/after labels, fo
 
 The theme declares a base button palette (`--c-button`, `--c-button-text`), secondary palette (`--c-secondary-button*`), outline palette (`--c-outline-button*`), and link color (`--c-link`). Background/text hover tokens are separate. Primary add-to-bag controls and outline links were observed; secondary definitions exist even when no secondary sample is rendered. Do not fabricate a tertiary tier.
 
-Outline buttons draw rings with `::after` box shadows and use a transparent background. Their outer element may report `border: 0`. Focus styles use concentric box shadows; active rules scale controls to .97. Preserve declarations as source evidence rather than presenting them as tested interactive states.
+Outline buttons draw rings with `::after` box shadows and use a transparent background. Their outer element may report `border: 0`. Focus styles use concentric box shadows; active rules scale controls to .97. Preserve declarations as source evidence. The extractor now separately samples computed CSS hover styles, including descendant text and generated borders.
 
 ## Comparison runs
 
@@ -27,7 +27,7 @@ Outline buttons draw rings with `::after` box shadows and use a transparent back
 - Keep function (`button`, `link`, `addToCart`) separate from explicit variant (`primary`, `secondary`, `tertiary`, `outline`, `text`) and default appearance (`filled`, `outline`, `decorated`, `underlined`, `text`).
 - Variant evidence is the actual matching class. Never derive a hierarchy from marketing copy or a generated block ID.
 - Capture control box styles, descendant text styles, nearest solid ancestor background, and generated pseudo-element styles separately. The preview approximates empty absolute pseudo-element borders, shadows, and fills; complex artwork remains in the inspector.
-- Keep declared button/link rules, source stylesheet, and enclosing conditions. These can expose unused variants and hover/focus/active/disabled declarations without claiming those states were exercised.
+- Keep declared button/link rules, source stylesheet, and enclosing conditions. These can expose unused variants and hover/focus/active/disabled declarations without claiming focus, active, or disabled states were exercised. CSS hover is captured through Chromium forced pseudo-states on the element and its ancestors. JavaScript mouse handlers are not simulated.
 - Bound samples to 36 button styles, 18 links, 120 font usages, and 400 control rules. Results can omit later or inaccessible CSS; this is an observed kit, not a lossless site clone.
 
-The preview marks variant availability as observed, declared only, or not found, and retains original data in JSON. No storefront interactions that submit forms or add products are performed.
+The preview marks variant availability as observed, declared only, or not found, and retains original data in JSON. Hover-capable specimens apply their captured style differences on pointer entry or keyboard focus and restore their original styles on exit. Scheme specimens use exposed hover tokens. No storefront interactions that submit forms or add products are performed.

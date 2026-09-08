@@ -43,6 +43,7 @@ test("rendered schemes stay separate and HTTP token copying yields complete CSS"
 							"--c-foreground": "0,0,0",
 							"--c-button": "0,0,0",
 							"--c-button-text": "255,255,255",
+							"--c-button-hover": "255,0,0",
 							"--c-secondary-button": "220,220,220",
 							"--c-secondary-button-text": "0,0,0",
 							"--c-outline-button-text": "0,0,0",
@@ -51,6 +52,31 @@ test("rendered schemes stay separate and HTTP token copying yields complete CSS"
 					{ selector: ".color-dark", variables: { "--c-background": "0,0,0", "--c-foreground": "255,255,255" } },
 				],
 				fontFaces: [],
+				uiKit: [
+					{
+						kind: "button",
+						tag: "button",
+						variant: "primary",
+						text: "Hover specimen",
+						styles: { "background-color": "white", color: "black", "font-family": "sans-serif" },
+						textStyles: { color: "black" },
+						pseudoElements: {
+							"::before": {
+								content: '""',
+								position: "absolute",
+								inset: "auto",
+								width: "0px",
+								height: "2px",
+								"background-color": "black",
+							},
+							"::after": { content: '""', position: "absolute", inset: "0px", "box-shadow": "0 0 0 1px black" },
+						},
+						hover: {
+							styles: { "background-color": "red" },
+							pseudoElements: { "::before": { width: "40px" }, "::after": { content: "none" } },
+						},
+					},
+				],
 			},
 		}
 		await page.route("**/*", (route) => {
@@ -75,6 +101,19 @@ test("rendered schemes stay separate and HTTP token copying yields complete CSS"
 				.evaluateAll((elements) => elements.map((el) => el.getAttribute("data-scheme-variant"))),
 		).toEqual(["Primary", "Secondary", "Outline"])
 		expect(await page.locator(".scheme-sample").nth(1).locator("[data-scheme-variant]").count()).toBe(0)
+		const button = page.locator('[data-scheme-variant="Primary"]').first()
+		await button.hover()
+		expect(await button.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 0, 0)")
+		await page.mouse.move(0, 0)
+		expect(await button.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(0, 0, 0)")
+		await button.focus()
+		expect(await button.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 0, 0)")
+		const control = page.locator("#ui-kit .sample-control").first()
+		await control.hover()
+		expect(await control.locator('[data-pseudo="::before"]').evaluate((el) => getComputedStyle(el).width)).toBe("40px")
+		expect(await control.locator('[data-pseudo="::after"]').evaluate((el) => getComputedStyle(el).display)).toBe("none")
+		await page.mouse.move(0, 0)
+		expect(await control.locator('[data-pseudo="::before"]').evaluate((el) => getComputedStyle(el).width)).toBe("0px")
 		await page.evaluate(() => {
 			Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true })
 			document.execCommand = () => {
