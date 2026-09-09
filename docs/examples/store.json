@@ -1,0 +1,117 @@
+{
+	"brandName": "Example Store (synthetic demo)",
+	"url": "https://store.example.com",
+	"finalUrl": "https://store.example.com",
+	"logo": null,
+	"colors": {
+		"background": "#ffffff",
+		"textPrimary": "#202020",
+		"primary": "#254f43"
+	},
+	"images": {},
+	"typography": {},
+	"components": {},
+	"shopify": {
+		"detected": true,
+		"status": "detected",
+		"architecture": "theme",
+		"headless": false,
+		"evidence": ["Synthetic fixture. No live storefront was scanned."],
+		"theme": {
+			"schemaName": "Example Theme",
+			"version": "1.0.0"
+		},
+		"rootTokens": {
+			"--c-background": "#ffffff",
+			"--c-foreground": "#202020",
+			"--c-button": "#254f43",
+			"--c-button-text": "#ffffff",
+			"--c-button-hover": "#16382f",
+			"--c-button-text-hover": "#ffffff",
+			"--c-secondary-button": "#eeeeee",
+			"--c-secondary-button-text": "#202020",
+			"--c-secondary-button-hover": "#dddddd",
+			"--c-outline-button-text": "#254f43",
+			"--c-outline-button-hover": "#254f43",
+			"--c-outline-button-text-hover": "#ffffff",
+			"--c-link": "#254f43"
+		},
+		"colorSchemes": [
+			{
+				"selector": ".color-example",
+				"source": "synthetic fixture",
+				"variables": {
+					"--c-background": "#ffffff",
+					"--c-foreground": "#202020",
+					"--c-button": "#254f43",
+					"--c-button-text": "#ffffff",
+					"--c-button-hover": "#16382f",
+					"--c-button-text-hover": "#ffffff",
+					"--c-secondary-button": "#eeeeee",
+					"--c-secondary-button-text": "#202020",
+					"--c-secondary-button-hover": "#dddddd",
+					"--c-outline-button-text": "#254f43",
+					"--c-outline-button-hover": "#254f43",
+					"--c-outline-button-text-hover": "#ffffff",
+					"--c-link": "#254f43"
+				}
+			}
+		],
+		"renderedSchemes": [],
+		"fontFaces": [],
+		"fontUsage": [],
+		"typographyHierarchy": [
+			{
+				"role": "h1",
+				"family": "Georgia, serif",
+				"size": "40px",
+				"weight": "400",
+				"lineHeight": "48px",
+				"letterSpacing": "normal",
+				"textTransform": "none",
+				"text": "Example heading"
+			}
+		],
+		"uiKit": [
+			{
+				"kind": "button",
+				"variant": "primary",
+				"variantEvidence": "button--primary",
+				"treatment": "filled",
+				"tag": "button",
+				"classes": "button button--primary",
+				"text": "Shop now",
+				"styles": {
+					"background-color": "#254f43",
+					"color": "#ffffff",
+					"border": "1px solid #254f43",
+					"border-radius": "8px",
+					"padding": "12px 20px",
+					"font-family": "Arial, sans-serif",
+					"font-size": "16px"
+				},
+				"textStyles": {
+					"color": "#ffffff"
+				},
+				"pseudoElements": {},
+				"contextBackground": "#ffffff",
+				"hover": {
+					"styles": {
+						"background-color": "#16382f",
+						"border-color": "#16382f"
+					},
+					"source": "synthetic fixture"
+				}
+			}
+		],
+		"logos": [],
+		"controlRules": [],
+		"limitations": ["Synthetic demonstration data; example domains are placeholders."]
+	},
+	"diagnostics": {
+		"llm": {
+			"enabled": false,
+			"used": false
+		}
+	}
+}

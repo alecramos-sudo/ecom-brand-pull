@@ -187,7 +187,7 @@ test("legacy resize/crop suffixes are removed and SVG stays vector", () => {
 
 test("non-Shopify URLs and embedded SVG are not rewritten", () => {
 	for (const source of [
-		"https://other.com/cdn/shop/files/logo.png",
+		"https://example.org/cdn/shop/files/logo.png",
 		"https://cdn.shopify.com.evil.test/logo.png",
 		"data:image/svg+xml,abc",
 		"/logo_200x.png",
@@ -267,9 +267,9 @@ test("logo variants reject product and editorial alt text mentioning logos or br
 		indicators: { inHeader: true, altMatch: true, srcMatch: false, classMatch: false, hrefMatch: false },
 		source: "img",
 	})
-	const selected = candidate("wordmark.svg", "HiNote logo")
-	const photo = candidate("pdp.webp", "Pouch with HiNote logo and fruit")
-	const article = candidate("article.png", "Discover the branding behind HiNote")
+	const selected = candidate("wordmark.svg", "Example Store logo")
+	const photo = candidate("pdp.webp", "Pouch with Example Store logo and fruit")
+	const article = candidate("article.png", "Discover the branding behind Example Store")
 	const variant = candidate("logo-white.svg", "")
 	expect(
 		collectShopifyLogos([selected, photo, article, variant], selected.src, "https://example.com").map(

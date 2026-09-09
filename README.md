@@ -2,6 +2,8 @@
 
 A focused public fork of [suraj-xd/brandpull](https://github.com/suraj-xd/brandpull) for Shopify storefronts. Keeps Brandpull’s Chromium extraction, branding JSON, optional LLM pass, and local visual preview; adds a `shopify` field and Shopify preview sections. Original MIT license and attribution are retained.
 
+All example domains and store identities below are placeholders. Substitute a storefront URL to run a real scan.
+
 ## Run this fork
 
 The fork is not published to npm. `npx brandpull` still runs upstream.
@@ -11,8 +13,8 @@ git clone https://github.com/alecramos-sudo/ecom-brand-pull.git
 cd ecom-brand-pull
 bun install
 bun run build
-node bin/brandpull https://angelacaglia.com --no-preview -o angela-branding.json
-node bin/brandpull https://gruns.co
+node bin/brandpull https://store.example.com --no-preview -o store-branding.json
+node bin/brandpull https://shop.example.org
 ```
 
 Requires Node.js 20+, Bun for development/builds, and Chromium. Install Chromium with `npx playwright install chromium` if needed; installed Google Chrome is also supported as a fallback. After building, `npm link` exposes `ecom-brand-pull` and the legacy `brandpull` alias.
@@ -20,7 +22,13 @@ Requires Node.js 20+, Bun for development/builds, and Chromium. Install Chromium
 ## Compare results in one preview
 
 ```bash
-node bin/brandpull preview angela-branding.json --compare gruns-branding.json --no-open
+node bin/brandpull preview store-branding.json --compare shop-branding.json --no-open
+```
+
+For a synthetic demo without scanning a website:
+
+```bash
+node bin/brandpull preview docs/examples/store.json --compare docs/examples/shop.json --no-open
 ```
 
 Repeat `--compare` to add more saved results. The store selector switches the kit, JSON and image downloads together. You can also use `--compare` with a new URL capture when opening its preview.
@@ -43,7 +51,7 @@ bun run check
 bun test
 ```
 
-[Font and control-style research](docs/control-styles.md) · [Exploration notes and live results](docs/exploration.md) · [Shopify image URL reference](https://shopify.dev/docs/api/liquid/filters/image_url) · [Horizon palette](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/color-palette.liquid) · [Horizon typography](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/theme-styles-variables.liquid)
+[Font and control-style research](docs/control-styles.md) · [Extraction guide](docs/exploration.md) · [Shopify image URL reference](https://shopify.dev/docs/api/liquid/filters/image_url) · [Horizon palette](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/color-palette.liquid) · [Horizon typography](https://github.com/Shopify/horizon/blob/8b42ace57642e45a3a59841d2ae06d386c929e72/snippets/theme-styles-variables.liquid)
 
 ---
 
@@ -54,20 +62,19 @@ The following instructions describe the original `brandpull` npm package. The fo
 
 Brandpull extracts clean branding JSON: logos, favicons, OG images, colors, fonts, typography, spacing, and component styles.
 
-https://github.com/user-attachments/assets/ccfb76e1-86fa-4d51-9875-edcb4c56237c
 
 ## Try It
 
 ```bash
-npx brandpull https://exa.ai
+npx brandpull https://example.com
 ```
 
-This saves `exa-ai-branding.json` and opens a local visual preview.
+This saves `example-com-branding.json` and opens a local visual preview.
 
 For agents or scripts, skip the preview server:
 
 ```bash
-npx brandpull https://exa.ai --no-preview
+npx brandpull https://example.com --no-preview
 ```
 
 ## Install
@@ -82,13 +89,13 @@ bun install -g brandpull
 
 ```bash
 # Extract branding JSON, save it, and open the local preview
-brandpull https://exa.ai
+brandpull https://example.com
 
 # Save to a custom file
-brandpull https://exa.ai -o exa-branding.json
+brandpull https://example.com -o example-branding.json
 
 # Reopen an existing branding JSON file
-brandpull preview exa-branding.json
+brandpull preview example-branding.json
 ```
 
 ## For Agents
@@ -96,7 +103,7 @@ brandpull preview exa-branding.json
 Use `--no-preview` when an agent needs the branding JSON without starting the local HTML preview server.
 
 ```bash
-brandpull https://exa.ai --no-preview
+brandpull https://example.com --no-preview
 ```
 
 The default command is human-friendly and opens the preview. The `--no-preview` flag keeps it automation-friendly while still saving the JSON file.
@@ -129,20 +136,20 @@ If the preview port is already busy, `brandpull` automatically tries the next po
 ## Examples
 
 ```bash
-# Save exa-ai-branding.json and open the preview
-brandpull https://exa.ai
+# Save example-com-branding.json and open the preview
+brandpull https://example.com
 
 # Save the branding profile
-brandpull branding https://ramp.com -o ramp-branding.json
+brandpull branding https://example.org -o example-org-branding.json
 
 # Capture debug candidates and inspect them visually
-brandpull branding https://exa.ai --raw --web-preview
+brandpull branding https://example.com --raw --web-preview
 
 # Preview a local JSON file without scraping again
-brandpull preview ramp-branding.json
+brandpull preview example-org-branding.json
 
 # Use the optional LLM cleanup pass
-OPENAI_API_KEY=... brandpull branding https://linear.app --llm -o linear-branding.json
+OPENAI_API_KEY=... brandpull branding https://example.net --llm -o example-net-branding.json
 ```
 
 ## How Branding Works
@@ -155,12 +162,12 @@ The processor then scores those candidates into a stable profile. If navigation,
 
 ```json
 {
-  "brandName": "Exa",
-  "url": "https://exa.ai/",
-  "logo": "https://exa.ai/...",
+  "brandName": "Example Store",
+  "url": "https://example.com/",
+  "logo": "https://example.com/...",
   "images": {
-    "favicon": "https://exa.ai/favicon.ico",
-    "ogImage": "https://exa.ai/..."
+    "favicon": "https://example.com/favicon.ico",
+    "ogImage": "https://example.com/..."
   },
   "colors": {
     "primary": "#ffffff",

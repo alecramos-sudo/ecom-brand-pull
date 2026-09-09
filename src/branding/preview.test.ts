@@ -4,13 +4,13 @@ import { previewResponse } from "./preview"
 import { previewHtml } from "./preview-page"
 
 const profiles = [
-	{ brandName: "Angela", logo: "data:image/svg+xml,%3Csvg%3E%3C/svg%3E" },
-	{ brandName: "Grüns", logo: "data:image/svg+xml,%3Csvg%20id%3D%22gruns%22%3E%3C/svg%3E" },
+	{ brandName: "Example Store", logo: "data:image/svg+xml,%3Csvg%3E%3C/svg%3E" },
+	{ brandName: "Sample Shop", logo: "data:image/svg+xml,%3Csvg%20id%3D%22sample-shop%22%3E%3C/svg%3E" },
 ]
 test("preview switcher enumerates saved results and serves selected JSON", async () => {
 	expect(await (await previewResponse(profiles, "http://localhost/profiles.json")).json()).toEqual([
-		{ index: 0, name: "Angela" },
-		{ index: 1, name: "Grüns" },
+		{ index: 0, name: "Example Store" },
+		{ index: 1, name: "Sample Shop" },
 	])
 	expect(await (await previewResponse(profiles, "http://localhost/branding.json?profile=1")).json()).toEqual(
 		profiles[1],
@@ -20,8 +20,8 @@ test("preview switcher enumerates saved results and serves selected JSON", async
 })
 test("image downloads follow the selected store", async () => {
 	const result = await previewResponse(profiles, "http://localhost/download?profile=1&image=logo")
-	expect(await result.text()).toBe('<svg id="gruns"></svg>')
-	expect(result.headers.get("content-disposition")).toContain("gr-ns-logo.svg")
+	expect(await result.text()).toBe('<svg id="sample-shop"></svg>')
+	expect(result.headers.get("content-disposition")).toContain("sample-shop-logo.svg")
 })
 
 test("rendered schemes stay separate and HTTP token copying yields complete CSS", async () => {

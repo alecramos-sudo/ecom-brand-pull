@@ -1,6 +1,6 @@
 # Brand kit display
 
-Implemented the ten requested display updates while retaining the generic collector, processor and JSON fields.
+The display organizes extraction results while retaining the generic collector, processor and JSON fields.
 
 | Before | After | Why |
 |---|---|---|
@@ -14,11 +14,11 @@ Implemented the ten requested display updates while retaining the generic collec
 
 ## Verification
 
-- Desktop 1440px and mobile 390px: zero horizontal page overflow in Angela and Grüns captures; no browser page errors.
-- Fonts: 8 Angela and 3 Grüns font faces loaded in the captured run. Visible family references do not prove original glyph rendering; unavailable sources fall back.
+- Desktop 1440px and mobile 390px: zero horizontal page overflow in the verified desktop/mobile captures; no browser page errors.
+- Fonts: available font faces load into the preview. Visible family references do not prove original glyph rendering; unavailable sources fall back.
 - Store switcher selects the corresponding JSON; server tests cover selected image downloads and invalid profile IDs.
 - Browser tests confirm light/dark scheme isolation and a complete CSS block from the HTTP clipboard fallback.
-- 18 tests pass; Biome, TypeScript and build pass. Independent code review found the missing CSS closing brace, fixed with a browser regression test.
+- Automated tests cover extraction and preview behavior; Biome, TypeScript and build pass. Independent code review found the missing CSS closing brace, fixed with a browser regression test.
 - Visual fixes: captured zero/near-zero line heights get a readable specimen value with a note; raw values remain unchanged. White controls retain their surrounding background. No layout shifts from animation were introduced (viewer has no motion).
 
-Current capture artifacts live in ignored `out/research/`. Source image colors are unchanged, so white logos disappear on the light half of their paired comparison by design. Unexposed theme settings and absent hierarchy levels are not invented. Grüns exposes a root palette rather than named Shopify schemes.
+Generated capture artifacts are excluded from source control. Source image colors are unchanged, so white logos disappear on the light half of their paired comparison by design. Unexposed theme settings and absent hierarchy levels are not invented. Stores without named schemes display a root palette.
